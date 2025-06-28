@@ -3,15 +3,13 @@ const nextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
-  trailingSlash: false,
   images: {
     unoptimized: true
   },
+  // Try to make API routes work on Azure
   experimental: {
-    outputStandalone: false,
-  },
-  poweredByHeader: false,
-  generateEtags: false,
+    appDir: true,
+  }
 }
 
 module.exports = nextConfig 
