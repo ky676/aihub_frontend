@@ -6,12 +6,8 @@ const nextConfig = {
   images: {
     unoptimized: true
   },
-  // Ensure compatibility with Google App Engine
-  output: 'standalone',
-  // Required for API routes to work on App Engine
-  experimental: {
-    outputFileTracingRoot: undefined,
-  }
+  // Remove standalone output for App Engine
+  trailingSlash: false,
 }
 
 module.exports = nextConfig 
