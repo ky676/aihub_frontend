@@ -76,4 +76,4 @@ frontend/
 
 ## Backend Integration
 
-The frontend communicates with the Python Flask backend running on `http://localhost:5000` for AI risk assessment features. 
+The frontend communicates with the Python Flask backend running on `http://localhost:5000` for AI risk assessment features. # Trigger restart for environment variables Fri Jun 27 20:03:42 EDT 2025
