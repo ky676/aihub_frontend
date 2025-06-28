@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
 import crypto from 'crypto'
 import { PrismaClient } from '@prisma/client'
+import nodemailer from 'nodemailer'
 
 // Singleton pattern for Prisma in serverless environments
 const globalForPrisma = globalThis as unknown as {
@@ -19,36 +20,80 @@ const ALLOWED_DOMAINS = [
   'nyulangone.org'
 ]
 
-// Simple email sending function (you can replace with SendGrid, AWS SES, etc.)
+// Configure nodemailer transporter
+const createTransporter = () => {
+  return nodemailer.createTransporter({
+    host: process.env.SMTP_HOST,
+    port: parseInt(process.env.SMTP_PORT || '587'),
+    secure: false, // true for 465, false for other ports
+    auth: {
+      user: process.env.SMTP_USER,
+      pass: process.env.SMTP_PASS,
+    },
+  })
+}
+
+// Real email sending function
 async function sendVerificationEmail(email: string, verificationCode: string) {
-  // For now, we'll just log it - replace with actual email service
-  console.log(`
-    ========================================
-    VERIFICATION EMAIL FOR: ${email}
-    ========================================
+  try {
+    console.log('Attempting to send verification email to:', email)
     
-    Welcome to Mr. Advance AI Hub!
+    const transporter = createTransporter()
     
-    Your verification code is: ${verificationCode}
+    const mailOptions = {
+      from: process.env.EMAIL_FROM,
+      to: email,
+      subject: 'Verify your Mr. Advance AI Hub account',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #333;">Welcome to Mr. Advance AI Hub!</h2>
+          <p>Thank you for registering. Please verify your email address to complete your registration.</p>
+          
+          <div style="background-color: #f4f4f4; padding: 20px; border-radius: 5px; text-align: center; margin: 20px 0;">
+            <h3 style="color: #333; margin: 0;">Your Verification Code:</h3>
+            <h1 style="color: #007bff; font-size: 32px; margin: 10px 0; letter-spacing: 3px;">${verificationCode}</h1>
+          </div>
+          
+          <p>This code will expire in 24 hours.</p>
+          <p>If you didn't create this account, please ignore this email.</p>
+          
+          <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+          <p style="color: #888; font-size: 12px;">This email was sent from Mr. Advance AI Hub</p>
+        </div>
+      `,
+      text: `
+        Welcome to Mr. Advance AI Hub!
+        
+        Your verification code is: ${verificationCode}
+        
+        This code will expire in 24 hours.
+        
+        Enter this code on the verification page to complete your registration.
+      `
+    }
+
+    const result = await transporter.sendMail(mailOptions)
+    console.log('✅ Email sent successfully:', result.messageId)
+    return true
     
-    This code will expire in 24 hours.
+  } catch (error) {
+    console.error('❌ Failed to send email:', error)
     
-    Enter this code on the verification page to complete your registration.
+    // Fallback: Log to console for debugging
+    console.log(`
+      ========================================
+      FALLBACK - VERIFICATION EMAIL FOR: ${email}
+      ========================================
+      
+      Your verification code is: ${verificationCode}
+      
+      (Email delivery failed, using console log as fallback)
+      ========================================
+    `)
     
-    ========================================
-  `)
-  
-  // TODO: Replace with actual email service
-  // Example with SendGrid:
-  // await sgMail.send({
-  //   to: email,
-  //   from: 'noreply@mradvancellc.com',
-  //   subject: 'Verify your Mr. Advance AI Hub account',
-  //   text: `Your verification code is: ${verificationCode}`,
-  //   html: `<p>Your verification code is: <strong>${verificationCode}</strong></p>`
-  // })
-  
-  return true
+    // Don't throw error - let registration continue
+    return false
+  }
 }
 
 export async function POST(request: Request) {
@@ -131,12 +176,12 @@ export async function POST(request: Request) {
     console.log('User created successfully:', user.email)
 
     // Send verification email
-    try {
-      await sendVerificationEmail(email, verificationCode)
-      console.log('Verification email sent successfully')
-    } catch (emailError) {
-      console.error('Failed to send verification email:', emailError)
-      // Don't fail registration if email fails, but log it
+    const emailSent = await sendVerificationEmail(email, verificationCode)
+    
+    if (emailSent) {
+      console.log('✅ Verification email sent successfully')
+    } else {
+      console.log('⚠️ Email sending failed, but registration completed')
     }
 
     // Return user without password and verification token
@@ -146,9 +191,12 @@ export async function POST(request: Request) {
 
     return NextResponse.json(
       { 
-        message: 'Registration successful! Please check your email for a verification code.',
+        message: emailSent 
+          ? 'Registration successful! Please check your email for a verification code.'
+          : 'Registration successful! Check the server logs for your verification code (email delivery failed).',
         user: userWithoutPassword,
-        requiresVerification: true
+        requiresVerification: true,
+        emailSent: emailSent
       },
       { status: 201 }
     )

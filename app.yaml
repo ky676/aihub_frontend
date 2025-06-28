@@ -5,6 +5,13 @@ env_variables:
   NEXTAUTH_URL: https://mradvanceaihub.uc.r.appspot.com
   NEXTAUTH_SECRET: AjIu9K3ZISNDrODK5gr3NM3zqKdN1OpyEFn6jKen3po=
   DATABASE_URL: mongodb+srv://zy:12345678%40Y@chathistory.mongocluster.cosmos.azure.com/mradvance?retryWrites=true&w=majority&appName=chathistory
+  
+  # Email Configuration (Gmail SMTP)
+  SMTP_HOST: smtp.gmail.com
+  SMTP_PORT: 587
+  SMTP_USER: kerryyang676@gmail.com
+  SMTP_PASS: xzta xosa vmrp yszt
+  EMAIL_FROM: "Mr. Advance AI Hub <kerryyang676@gmail.com>"
 
 automatic_scaling:
   min_instances: 0
