@@ -1,0 +1,44 @@
+# This file specifies files that are *not* uploaded to Google Cloud
+# using gcloud deploy
+
+# Node.js dependencies
+node_modules/
+
+# Build outputs that will be rebuilt
+.next/
+
+# Development files
+.env.local
+.env.development
+
+# Git
+.git/
+.gitignore
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Testing
+coverage/
+.nyc_output/
+
+# Cache directories
+.cache/
+.npm/
+.eslintcache
+
+# Temporary directories
+tmp/
+temp/
+
+# Azure files (not needed for Google Cloud)
+.github/ 

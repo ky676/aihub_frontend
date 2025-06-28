@@ -6,9 +6,11 @@ const nextConfig = {
   images: {
     unoptimized: true
   },
-  // Try to make API routes work on Azure
+  // Ensure compatibility with Google App Engine
+  output: 'standalone',
+  // Required for API routes to work on App Engine
   experimental: {
-    appDir: true,
+    outputFileTracingRoot: undefined,
   }
 }
 

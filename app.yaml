@@ -1,0 +1,19 @@
+runtime: nodejs18
+
+env_variables:
+  NODE_ENV: production
+  NEXTAUTH_URL: https://YOUR_PROJECT_ID.uc.r.appspot.com
+  NEXTAUTH_SECRET: AjIu9K3ZISNDrODK5gr3NM3zqKdN1OpyEFn6jKen3po=
+  DATABASE_URL: mongodb+srv://zy:12345678%40Y@chathistory.mongocluster.cosmos.azure.com/mradvance?retryWrites=true&w=majority&appName=chathistory
+
+automatic_scaling:
+  min_instances: 0
+  max_instances: 10
+  target_cpu_utilization: 0.6
+
+handlers:
+- url: /_next/static
+  static_dir: .next/static
+
+- url: /.*
+  script: auto 
