@@ -13,6 +13,7 @@ import {
   UserIcon,
   CpuChipIcon
 } from '@heroicons/react/24/outline';
+import { getApiUrl } from '@/lib/config';
 
 interface Message {
   id: string;
@@ -88,7 +89,11 @@ export default function RiskAssessmentChatbot() {
     setMessages(prev => [...prev, botMessage]);
 
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/chat`, {
+      // Debug environment variable
+      const chatUrl = getApiUrl('/chat');
+      console.log('Chat URL:', chatUrl);
+      
+      const response = await fetch(chatUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -171,7 +176,10 @@ export default function RiskAssessmentChatbot() {
 
   const calculateRiskScore = async () => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/risk-score`, {
+      const riskScoreUrl = getApiUrl('/risk-score');
+      console.log('Risk Score URL:', riskScoreUrl);
+      
+      const response = await fetch(riskScoreUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
