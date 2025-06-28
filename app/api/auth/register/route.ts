@@ -22,7 +22,7 @@ const ALLOWED_DOMAINS = [
 
 // Configure nodemailer transporter
 const createTransporter = () => {
-  return nodemailer.createTransporter({
+  return nodemailer.createTransport({
     host: process.env.SMTP_HOST,
     port: parseInt(process.env.SMTP_PORT || '587'),
     secure: false, // true for 465, false for other ports
@@ -33,7 +33,7 @@ const createTransporter = () => {
   })
 }
 
-// Real email sending function
+// Real email sending function with nodemailer
 async function sendVerificationEmail(email: string, verificationCode: string) {
   try {
     console.log('Attempting to send verification email to:', email)
@@ -175,7 +175,7 @@ export async function POST(request: Request) {
 
     console.log('User created successfully:', user.email)
 
-    // Send verification email
+    // Send verification email with nodemailer
     const emailSent = await sendVerificationEmail(email, verificationCode)
     
     if (emailSent) {
