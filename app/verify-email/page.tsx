@@ -80,8 +80,8 @@ export default function VerifyEmailPage() {
     setMessage('');
 
     try {
-      const response = await fetch('/api/auth/verify-email', {
-        method: 'PUT',
+      const response = await fetch('/api/auth/resend-verification', {
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },

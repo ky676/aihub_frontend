@@ -6,6 +6,9 @@ env_variables:
   NEXTAUTH_SECRET: AjIu9K3ZISNDrODK5gr3NM3zqKdN1OpyEFn6jKen3po=
   DATABASE_URL: mongodb+srv://zy:12345678%40Y@chathistory.mongocluster.cosmos.azure.com/mradvance?retryWrites=true&w=majority&appName=chathistory
   
+  # Backend Connection (ngrok URL for local development)
+  NEXT_PUBLIC_BACKEND_URL: https://5381-216-165-95-189.ngrok-free.app
+  
   # Email Configuration (Gmail SMTP)
   SMTP_HOST: smtp.gmail.com
   SMTP_PORT: 587

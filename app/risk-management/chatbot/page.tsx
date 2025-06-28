@@ -88,7 +88,7 @@ export default function RiskAssessmentChatbot() {
     setMessages(prev => [...prev, botMessage]);
 
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/chat`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/chat`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -171,7 +171,7 @@ export default function RiskAssessmentChatbot() {
 
   const calculateRiskScore = async () => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/risk-score`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/risk-score`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

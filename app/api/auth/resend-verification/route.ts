@@ -1,6 +1,4 @@
 import { NextResponse } from 'next/server'
-import bcrypt from 'bcryptjs'
-import crypto from 'crypto'
 import { PrismaClient } from '@prisma/client'
 import nodemailer from 'nodemailer'
 
@@ -13,16 +11,9 @@ const prisma = globalForPrisma.prisma ?? new PrismaClient()
 
 if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma
 
-// Allowed email domains
-const ALLOWED_DOMAINS = [
-  'mradvancellc.com',
-  'nyu.edu', 
-  'nyulangone.org'
-]
-
 // Configure nodemailer transporter
 const createTransporter = () => {
-  return nodemailer.createTransporter({
+  return nodemailer.createTransport({
     host: process.env.SMTP_HOST,
     port: parseInt(process.env.SMTP_PORT || '587'),
     secure: false, // true for 465, false for other ports
@@ -33,10 +24,10 @@ const createTransporter = () => {
   })
 }
 
-// Real email sending function
+// Resend verification email function
 async function sendVerificationEmail(email: string, verificationCode: string) {
   try {
-    console.log('Attempting to send verification email to:', email)
+    console.log('Resending verification email to:', email)
     
     const transporter = createTransporter()
     
@@ -73,16 +64,16 @@ async function sendVerificationEmail(email: string, verificationCode: string) {
     }
 
     const result = await transporter.sendMail(mailOptions)
-    console.log('✅ Email sent successfully:', result.messageId)
+    console.log('✅ Verification email resent successfully:', result.messageId)
     return true
     
   } catch (error) {
-    console.error('❌ Failed to send email:', error)
+    console.error('❌ Failed to resend email:', error)
     
     // Fallback: Log to console for debugging
     console.log(`
       ========================================
-      FALLBACK - VERIFICATION EMAIL FOR: ${email}
+      RESEND VERIFICATION EMAIL FOR: ${email}
       ========================================
       
       Your verification code is: ${verificationCode}
@@ -91,118 +82,101 @@ async function sendVerificationEmail(email: string, verificationCode: string) {
       ========================================
     `)
     
-    // Don't throw error - let registration continue
     return false
   }
 }
 
 export async function POST(request: Request) {
   try {
-    console.log('Registration attempt started')
+    console.log('Resend verification email attempt started')
     
     // Test database connection first
     await prisma.$connect()
-    console.log('Database connected successfully for registration')
+    console.log('Database connected successfully for resend verification')
 
-    const { firstName, lastName, email, company, password } = await request.json()
+    const { email } = await request.json()
     
-    console.log('Registration data received:', { firstName, lastName, email, company, passwordLength: password?.length })
+    console.log('Resend verification request for:', email)
 
-    // Validate required fields
-    if (!firstName || !lastName || !email || !company || !password) {
-      console.log('Missing required fields')
+    // Validate email
+    if (!email) {
+      console.log('Missing email')
       return NextResponse.json(
-        { error: 'All fields are required' },
+        { error: 'Email is required' },
         { status: 400 }
       )
     }
 
-    // Validate email domain
-    const emailDomain = email.split('@')[1]?.toLowerCase()
-    console.log('Email domain:', emailDomain)
-    
-    if (!ALLOWED_DOMAINS.includes(emailDomain)) {
-      console.log('Invalid email domain:', emailDomain)
-      return NextResponse.json(
-        { 
-          error: `Registration is restricted to ${ALLOWED_DOMAINS.join(', ')} email addresses only.`,
-          allowedDomains: ALLOWED_DOMAINS
-        },
-        { status: 403 }
-      )
-    }
-
-    // Check if user already exists
-    console.log('Checking for existing user...')
-    const existingUser = await prisma.user.findUnique({
+    // Find user
+    console.log('Looking for user...')
+    const user = await prisma.user.findUnique({
       where: {
         email: email
       }
     })
 
-    if (existingUser) {
-      console.log('User already exists:', email)
+    if (!user) {
+      console.log('User not found:', email)
       return NextResponse.json(
-        { error: 'User with this email already exists' },
+        { error: 'User not found. Please register first.' },
+        { status: 404 }
+      )
+    }
+
+    // Check if already verified
+    if (user.emailVerified) {
+      console.log('User already verified:', email)
+      return NextResponse.json(
+        { error: 'Email is already verified. You can sign in.' },
         { status: 400 }
       )
     }
 
-    console.log('Creating new user...')
+    console.log('Generating new verification code...')
     
-    // Hash password
-    const hashedPassword = await bcrypt.hash(password, 12)
-
-    // Generate verification code (6-digit number)
+    // Generate new verification code (6-digit number)
     const verificationCode = Math.floor(100000 + Math.random() * 900000).toString()
     
     // Set expiration to 24 hours from now
     const verificationExpires = new Date()
     verificationExpires.setHours(verificationExpires.getHours() + 24)
 
-    // Create user (unverified)
-    const user = await prisma.user.create({
+    // Update user with new verification code
+    await prisma.user.update({
+      where: {
+        email: email
+      },
       data: {
-        name: `${firstName} ${lastName}`,
-        email: email,
-        company: company,
-        password: hashedPassword,
-        emailVerified: false,
         verificationToken: verificationCode,
         verificationExpires: verificationExpires,
       }
     })
 
-    console.log('User created successfully:', user.email)
+    console.log('New verification code generated for:', email)
 
     // Send verification email
     const emailSent = await sendVerificationEmail(email, verificationCode)
     
     if (emailSent) {
-      console.log('✅ Verification email sent successfully')
+      console.log('✅ Verification email resent successfully')
     } else {
-      console.log('⚠️ Email sending failed, but registration completed')
+      console.log('⚠️ Email resending failed')
     }
 
-    // Return user without password and verification token
-    const { password: _, verificationToken: __, ...userWithoutPassword } = user
-
-    console.log('Registration completed successfully for:', email)
+    console.log('Resend verification completed for:', email)
 
     return NextResponse.json(
       { 
         message: emailSent 
-          ? 'Registration successful! Please check your email for a verification code.'
-          : 'Registration successful! Check the server logs for your verification code (email delivery failed).',
-        user: userWithoutPassword,
-        requiresVerification: true,
+          ? 'Verification email sent! Please check your email for a new verification code.'
+          : 'Verification code generated. Check the server logs (email delivery failed).',
         emailSent: emailSent
       },
-      { status: 201 }
+      { status: 200 }
     )
 
   } catch (error) {
-    console.error('Registration error details:', error)
+    console.error('Resend verification error details:', error)
     
     // Provide more specific error information
     let errorMessage = 'Internal server error'
@@ -212,7 +186,7 @@ export async function POST(request: Request) {
     
     return NextResponse.json(
       { 
-        error: 'Registration failed',
+        error: 'Failed to resend verification email',
         details: errorMessage,
         timestamp: new Date().toISOString()
       },
